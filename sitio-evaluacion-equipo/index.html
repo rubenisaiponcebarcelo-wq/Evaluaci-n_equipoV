@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autodiagnóstico</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .inicio { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; padding: 26px 28px; }
+  .inicio #intro { font-size: 16px; line-height: 1.55; }
+  .pautas { margin: 14px 0 0; padding-left: 18px; color: var(--tinta-2); display: grid; gap: 4px; }
+  .inicio-nombre { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--linea); display: grid; gap: 10px; max-width: 360px; }
+  .inicio-nombre .btn { justify-self: start; padding: 10px 26px; }
+  .inicio-secciones { background: var(--tinte); border: 1px solid var(--tinte-borde); border-radius: 3px; padding: 16px 18px; align-self: start; }
+  .inicio-secciones .etq { color: var(--marino); margin-bottom: 8px; }
+  .inicio-secciones ol { margin: 0; padding-left: 20px; display: grid; gap: 7px; font-size: 14px; color: var(--marino); }
+  .inicio-secciones li span:first-child { display: inline; }
+  .inicio-secciones li { padding-left: 2px; }
+  .inicio-secciones li .n { float: right; color: var(--tinta-3); font-size: 12px; }
+  .fin { max-width: 760px; }
+
+  .form-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 20px; align-items: start; }
+  .lateral { position: sticky; top: 16px; background: var(--superficie); border: 1px solid var(--linea); border-radius: var(--radio); padding: 16px 0 10px; }
+  .lat-quien { padding: 0 16px; font-weight: 600; color: var(--marino); }
+  .lat-pct { padding: 0 16px; font-size: 13px; color: var(--tinta-2); margin-top: 2px; }
+  .lat-pct b { color: var(--acento); font-size: 15px; }
+  .lateral .progreso { margin: 8px 16px 12px; }
+  .lat-nav { display: grid; border-top: 1px solid var(--linea); padding-top: 6px; }
+  .lat-nav a { display: flex; justify-content: space-between; gap: 8px; padding: 6px 16px; font-size: 13.5px; color: var(--tinta-2); text-decoration: none; border-left: 3px solid transparent; }
+  .lat-nav a:hover { background: var(--tinte); color: var(--marino); }
+  .lat-nav a .n { color: var(--tinta-3); font-size: 12px; white-space: nowrap; }
+  .lat-nav a.listo .n { color: var(--bajo); font-weight: 600; }
+  @media (min-width: 1000px) { .barra { display: none; } }
+  @media (max-width: 999px) { .form-layout { grid-template-columns: minmax(0, 1fr); } .lateral { display: none; } }
+  @media (max-width: 760px) { .inicio { grid-template-columns: 1fr; padding: 20px 16px; } }
+</style>
+</head>
+<body>
+<div class="demo-banda" id="banda-demo" hidden><div class="wrap">Versión de prueba: las respuestas no se guardan.</div></div>
+
+<header class="top">
+  <div class="wrap">
+    <h1 id="titulo">Autodiagnóstico de competencias</h1>
+    <span class="periodo" id="periodo" hidden></span>
+  </div>
+</header>
+
+<div class="barra" id="barra" hidden>
+  <div class="wrap">
+    <div class="fila">
+      <span class="quien" id="barra-quien"></span>
+      <div class="progreso" aria-hidden="true"><i id="barra-avance"></i></div>
+      <span class="cuenta" id="barra-cuenta"></span>
+    </div>
+    <nav class="indice-secc" id="indice" aria-label="Secciones"></nav>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="card" id="v-cargando"><p class="cargando">Cargando…</p></section>
+
+  <section class="card" id="v-error" hidden>
+    <p class="aviso error" id="error-msg"></p>
+    <p style="margin-top:14px"><button class="btn sec" onclick="location.reload()">Reintentar</button></p>
+  </section>
+
+  <section id="v-inicio" class="card inicio" hidden>
+    <div class="inicio-texto">
+      <p id="intro"></p>
+      <div class="inicio-nombre">
+        <label class="campo" for="sel-nombre">Nombre</label>
+        <select id="sel-nombre"><option value="">Selecciona tu nombre</option></select>
+        <button class="btn" id="btn-comenzar" disabled>Comenzar</button>
+      </div>
+    </div>
+    <aside class="inicio-secciones" aria-label="Secciones del cuestionario">
+      <p class="etq">Secciones</p>
+      <ol id="lista-secciones"></ol>
+    </aside>
+  </section>
+
+  <div class="form-layout" id="v-form-wrap" hidden>
+  <aside class="lateral" aria-label="Avance">
+    <p class="lat-quien" id="lat-quien"></p>
+    <p class="lat-pct"><b id="lat-pct">0%</b> completado</p>
+    <div class="progreso" aria-hidden="true"><i id="lat-avance"></i></div>
+    <nav class="lat-nav" id="lat-nav" aria-label="Secciones"></nav>
+  </aside>
+  <form id="v-form" novalidate>
+    <div id="bloques"></div>
+    <div class="card acciones-fin">
+      <p class="tenue" id="pie-estado">Tu avance se guarda en este navegador.</p>
+      <button type="submit" class="btn" id="btn-enviar">Enviar autodiagnóstico</button>
+    </div>
+  </form>
+  </div>
+
+  <section class="card fin" id="v-fin" hidden>
+    <h2 style="font-size:19px">Respuestas enviadas</h2>
+    <p class="muted" style="margin-top:8px">Gracias, <span id="fin-nombre"></span>. Tus respuestas quedaron registradas.</p>
+    <p class="muted" style="margin-top:8px">Si necesitas corregir algo, vuelve a entrar y envía de nuevo. Se conserva la versión más reciente.</p>
+    <p style="margin-top:18px"><button type="button" class="btn sec" id="btn-inicio">Volver al inicio</button></p>
+  </section>
+</main>
+
+<footer class="wrap pie"><a class="acceso-oculto" href="panel.html" aria-label="Acceso"></a></footer>
+
+<script src="config.js"></script>
+<script src="demo.js"></script>
+<script src="comun.js"></script>
+<script>
+(function () {
+  'use strict';
+  var D = window.Diag, esc = D.esc;
+  var CAT = null, nombre = '', claveBorrador = '';
+  var $ = function (id) { return document.getElementById(id); };
+
+  function mostrar(id) {
+    ['v-cargando', 'v-error', 'v-inicio', 'v-form-wrap', 'v-fin'].forEach(function (v) { $(v).hidden = v !== id; });
+    $('barra').hidden = id !== 'v-form-wrap';
+  }
+  function error(msg) { $('error-msg').textContent = msg; mostrar('v-error'); }
+
+  if (D.DEMO) $('banda-demo').hidden = false;
+
+  D.api('catalogo').then(function (r) {
+    CAT = r.catalogo;
+    document.title = 'Autodiagnóstico · ' + CAT.titulo;
+    $('titulo').textContent = CAT.titulo;
+    if (CAT.periodo) { $('periodo').textContent = 'Periodo ' + CAT.periodo; $('periodo').hidden = false; }
+    $('intro').textContent = CAT.intro;
+    CAT.personas.slice().sort(function (a, b) { return a.localeCompare(b, 'es'); }).forEach(function (p) {
+      var o = document.createElement('option'); o.value = p; o.textContent = p; $('sel-nombre').appendChild(o);
+    });
+    $('lista-secciones').innerHTML = D.ordenBloques(CAT).map(function (b) {
+      var n = CAT.abiertas.filter(function (p) { return p.bloque === b; }).length + CAT.competencias.filter(function (c) { return c.bloque === b; }).length;
+      return '<li><span>' + esc(b) + '</span><span class="n">' + n + '</span></li>';
+    }).join('');
+    mostrar('v-inicio');
+  }).catch(function (e) { error(e.message); });
+
+  $('sel-nombre').addEventListener('change', function () {
+    nombre = this.value;
+    $('btn-comenzar').disabled = !nombre;
+  });
+
+  $('btn-inicio').addEventListener('click', function () {
+    nombre = '';
+    $('sel-nombre').value = '';
+    $('btn-comenzar').disabled = true;
+    $('bloques').innerHTML = '';
+    mostrar('v-inicio');
+    window.scrollTo(0, 0);
+  });
+
+  $('btn-comenzar').addEventListener('click', function () {
+    claveBorrador = 'diag_auto_' + CAT.periodo + '_' + nombre;
+    construir(D.store.get(claveBorrador) || {});
+    $('barra-quien').textContent = nombre;
+    $('lat-quien').textContent = nombre;
+    mostrar('v-form-wrap');
+    window.scrollTo(0, 0);
+    actualizarAvance();
+  });
+
+  /* ---------- Construcción del cuestionario ---------- */
+
+  function construir(b) {
+    var bloques = D.ordenBloques(CAT);
+    var html = '', indice = '', lateral = '';
+    bloques.forEach(function (nombreBloque, i) {
+      var abiertas = CAT.abiertas.filter(function (p) { return p.bloque === nombreBloque; });
+      var reactivos = CAT.competencias.filter(function (c) { return c.bloque === nombreBloque; });
+      var idSec = 'sec-' + i;
+      indice += '<a href="#' + idSec + '" data-sec="' + idSec + '">' + (i + 1) + '. ' + esc(nombreBloque) + '</a>';
+      lateral += '<a href="#' + idSec + '" data-sec="' + idSec + '"><span>' + (i + 1) + '. ' + esc(nombreBloque) + '</span><span class="n" data-n></span></a>';
+      html += '<section class="card bloque" id="' + idSec + '"><div class="bloque-cab"><p class="paso">Sección ' + (i + 1) + ' de ' + bloques.length + '</p><h2>' + esc(nombreBloque) + '</h2></div>';
+      if (abiertas.length) {
+        html += abiertas.map(function (p) { return D.preguntaHTML(p, 'a_', (b.a || {})[p.id], CAT.escalas); }).join('');
+      }
+      if (reactivos.length) {
+        html += '<div class="sub-cab"><p class="etq">Califica del 1 al 5</p></div>';
+        html += reactivos.map(function (c) {
+          var esc5 = CAT.escalas[c.escala] || [];
+          var prev = (b.r || {})[c.id] || {};
+          return '<div class="item" data-reac="' + esc(c.id) + '"><div class="preg">' + esc(c.texto) + '<span class="req" aria-hidden="true">*</span></div>' +
+            D.escalaHTML('r_' + c.id, esc5, prev.v) +
+            '<p class="etq-movil" data-movil></p>' +
+            '<div class="com-tog"><button type="button" class="btn fantasma" data-com>' + (prev.c ? 'Editar ejemplo' : 'Agregar ejemplo') + '</button></div>' +
+            '<div class="com"' + (prev.c ? '' : ' hidden') + '><textarea name="c_' + esc(c.id) + '" rows="2" placeholder="Opcional">' + esc(prev.c || '') + '</textarea></div></div>';
+        }).join('');
+      }
+      html += '</section>';
+    });
+    $('bloques').innerHTML = html;
+    $('indice').innerHTML = indice;
+    $('lat-nav').innerHTML = lateral;
+    document.querySelectorAll('[data-reac]').forEach(etiquetaMovil);
+  }
+
+  function etiquetaMovil(item) {
+    var c = CAT.competencias.filter(function (x) { return x.id === item.dataset.reac; })[0];
+    var v = D.valorRadio(item, 'r_' + c.id);
+    var et = (CAT.escalas[c.escala] || []).filter(function (o) { return String(o.v) === v; })[0];
+    item.querySelector('[data-movil]').textContent = et ? et.v + ' · ' + et.etiqueta : '';
+  }
+
+  $('bloques').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-com]');
+    if (!b) return;
+    var caja = b.closest('.item').querySelector('.com');
+    caja.hidden = !caja.hidden;
+    if (!caja.hidden) caja.querySelector('textarea').focus();
+  });
+
+  var guardarTimer;
+  $('v-form').addEventListener('input', alCambiar);
+  $('v-form').addEventListener('change', alCambiar);
+  function alCambiar(e) {
+    var item = e.target.closest('.item');
+    if (item) {
+      item.classList.remove('falta');
+      if (item.dataset.reac) etiquetaMovil(item);
+    }
+    actualizarAvance();
+    clearTimeout(guardarTimer);
+    guardarTimer = setTimeout(function () { D.store.set(claveBorrador, recolectar()); }, 400);
+  }
+
+  function recolectar() {
+    var f = $('v-form'), out = { r: {}, a: {} };
+    CAT.competencias.forEach(function (c) {
+      var v = D.valorRadio(f, 'r_' + c.id);
+      var t = f.querySelector('[name="c_' + D.cssEsc(c.id) + '"]');
+      out.r[c.id] = { v: v ? Number(v) : '', c: t ? t.value.trim() : '' };
+    });
+    CAT.abiertas.forEach(function (p) { out.a[p.id] = D.leerPregunta(f, p, 'a_'); });
+    return out;
+  }
+
+  function faltantes(datos) {
+    var f = [];
+    CAT.competencias.forEach(function (c) { if (!datos.r[c.id].v) f.push(document.querySelector('[data-reac="' + D.cssEsc(c.id) + '"]')); });
+    CAT.abiertas.forEach(function (p) { if (p.requerida && D.vacio(datos.a[p.id])) f.push(document.querySelector('[data-preg="' + D.cssEsc(p.id) + '"]')); });
+    return f;
+  }
+
+  function actualizarAvance() {
+    var datos = recolectar();
+    var total = CAT.competencias.length + CAT.abiertas.filter(function (p) { return p.requerida; }).length;
+    var falta = faltantes(datos);
+    var hechos = total - falta.length;
+    var pct = Math.round(100 * hechos / total);
+    $('barra-avance').style.width = pct + '%';
+    $('lat-avance').style.width = pct + '%';
+    $('lat-pct').textContent = pct + '%';
+    $('barra-cuenta').textContent = hechos + ' / ' + total;
+    document.querySelectorAll('#bloques > section').forEach(function (sec) {
+      var req = sec.querySelectorAll('[data-reac], [data-preg]');
+      var reqTotal = Array.prototype.filter.call(req, function (el) { return el.dataset.reac || el.querySelector('.req'); }).length;
+      var pend = falta.filter(function (el) { return sec.contains(el); }).length;
+      document.querySelectorAll('a[data-sec="' + sec.id + '"]').forEach(function (link) {
+        link.classList.toggle('listo', !pend);
+        var n = link.querySelector('[data-n]');
+        if (n) n.textContent = pend ? (reqTotal - pend) + '/' + reqTotal : '✓';
+      });
+    });
+  }
+
+  $('v-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var datos = recolectar();
+    var falta = faltantes(datos);
+    document.querySelectorAll('.item.falta').forEach(function (x) { x.classList.remove('falta'); });
+    if (falta.length) {
+      falta.forEach(function (el) { el.classList.add('falta'); });
+      falta[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      D.toast('Faltan ' + falta.length + ' respuestas obligatorias, marcadas en rojo.', true);
+      return;
+    }
+    var payload = { nombre: nombre, competencias: {}, abiertas: {} };
+    Object.keys(datos.r).forEach(function (id) { payload.competencias[id] = datos.r[id]; });
+    Object.keys(datos.a).forEach(function (id) { payload.abiertas[id] = { v: datos.a[id] }; });
+    var btn = $('btn-enviar');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    D.api('enviarAuto', payload).then(function () {
+      D.store.del(claveBorrador);
+      $('fin-nombre').textContent = nombre.split(' ')[0];
+      mostrar('v-fin');
+      window.scrollTo(0, 0);
+    }).catch(function (err) {
+      D.toast(err.message, true);
+    }).then(function () { btn.disabled = false; btn.textContent = 'Enviar autodiagnóstico'; });
+  });
+})();
+</script>
+</body>
+</html>
