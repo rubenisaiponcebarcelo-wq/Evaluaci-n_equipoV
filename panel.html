@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .top { padding-bottom: 0; }
+  .top .fila-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  .sesion-info { font-size: 13px; color: #d7e3f2; }
+  .sesion-info button { background: none; border: 0; color: #fff; margin-left: 10px; cursor: pointer; padding: 0; font-size: 13px; }
+  .sesion-info button:hover { text-decoration: underline; }
+  .tabs { display: flex; gap: 22px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
+  .tabs button { background: none; color: #b9cde6; border: 0; border-bottom: 4px solid transparent; margin-bottom: -4px; padding: 8px 0 9px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+  .tabs button:hover { color: #fff; }
+  .tabs button[aria-selected=true] { color: #fff; border-bottom-color: var(--cielo); }
+  .top:not(.con-tabs) { padding-bottom: 14px; }
+
+  .resumen-linea { display: flex; flex-wrap: wrap; gap: 6px 28px; font-size: 14px; color: var(--tinta-2); padding: 4px 0; }
+  .resumen-linea b { color: var(--tinta); font-size: 16px; }
+  .resumen-linea .alerta b { color: var(--alto); }
+
+  .tabla-wrap { overflow-x: auto; margin: 0 -22px; padding: 0 22px; }
+  table.t { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.t th { text-align: left; font-size: 13px; font-weight: 600; color: var(--tinta-2); padding: 8px 10px; border-bottom: 2px solid var(--linea-2); white-space: nowrap; background: var(--tinte); color: var(--marino); border-bottom-color: var(--tinte-borde); }
+  table.t td { padding: 8px 10px; border-bottom: 1px solid var(--linea); vertical-align: middle; }
+  table.t tr.clic { cursor: pointer; }
+  table.t tr.clic:hover td { background: var(--acento-suave); }
+  table.t td.num, table.t th.num { text-align: right; white-space: nowrap; }
+  table.t tr.grupo td { background: var(--superficie-2); font-weight: 600; font-size: 13px; color: var(--marino); border-bottom-color: var(--linea-2); }
+
+  .chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 2px; white-space: nowrap; }
+  .chip.alta, .chip.sobre { background: var(--alto-suave); color: var(--alto); }
+  .chip.media, .chip.reconocida { background: var(--medio-suave); color: var(--medio); }
+  .chip.baja, .chip.alineado { background: var(--bajo-suave); color: var(--bajo); }
+  .chip.sub { background: var(--azul-suave); color: var(--azul); }
+  .chip.gris { background: var(--superficie-2); color: var(--tinta-3); border: 1px solid var(--linea); font-weight: 400; }
+
+  .barra-ind { display: flex; align-items: center; gap: 8px; min-width: 150px; }
+  .barra-ind i { display: block; height: 10px; }
+  .barra-ind span { font-size: 13px; width: 28px; text-align: right; }
+  .pos { color: var(--alto); } .neg { color: var(--azul); }
+
+  .rejilla-2 { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+  .cab-card { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .cab-card h3 { font-size: 16px; color: var(--marino); }
+  .nota-met { font-size: 13px; color: var(--tinta-3); margin-top: 12px; max-width: 900px; }
+  .nota-met b { color: var(--tinta-2); }
+
+  .scatter { max-width: 440px; display: block; margin: 0 auto; }
+  .scatter text { font-family: var(--fuente); }
+
+  .eval-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .lista-p { position: sticky; top: 12px; padding: 6px 0; max-height: calc(100vh - 24px); overflow: auto; }
+  .lista-p .etq { padding: 6px 14px; }
+  .lista-p button { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 8px; background: transparent; border: 0; border-left: 3px solid transparent; padding: 7px 12px 7px 11px; cursor: pointer; text-align: left; font-size: 14px; }
+  .lista-p button:hover { background: var(--superficie-2); }
+  .lista-p button[aria-current=true] { background: var(--tinte); border-left-color: var(--acento); font-weight: 600; }
+  .lista-p .ok { color: var(--bajo); font-size: 12px; }
+  .lista-p .pend { color: var(--tinta-3); font-size: 12px; }
+  .sel-movil { display: none; }
+  .guardar-fijo { position: sticky; bottom: 0; background: var(--superficie); border: 1px solid var(--linea-2); padding: 10px 16px; margin: 12px 0 0; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; z-index: 5; }
+
+  .resumen-p { display: flex; gap: 8px 28px; flex-wrap: wrap; margin-top: 12px; font-size: 13px; color: var(--tinta-2); }
+  .resumen-p b { display: block; font-size: 18px; color: var(--tinta); }
+  .pista { position: relative; height: 20px; min-width: 160px; }
+  .pista::before { content: ''; position: absolute; left: 0; right: 0; top: 9px; height: 1px; background: var(--linea-2); }
+  .pista .m { position: absolute; top: 4px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; }
+  .pista .m.auto { background: var(--azul); }
+  .pista .m.lid { background: var(--acento); border-radius: 0; width: 11px; height: 11px; margin-left: -5px; top: 4px; }
+  .pista .esp { position: absolute; top: 2px; width: 2px; height: 16px; background: var(--medio); }
+  .marcas-escala { display: flex; justify-content: space-between; font-size: 12px; color: var(--tinta-3); font-weight: 400; }
+  .leyenda-pista { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--tinta-2); }
+  .leyenda-pista i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+  .flag { font-size: 12px; white-space: nowrap; }
+  .val-l { font-size: 12px; color: var(--tinta-3); white-space: nowrap; }
+  .respuestas dt { font-weight: 600; margin-top: 12px; font-size: 14px; }
+  .respuestas dd { margin: 3px 0 0; color: var(--tinta-2); white-space: pre-wrap; }
+  .grupo-resp { margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--linea); font-size: 13px; font-weight: 600; color: var(--tinta-2); }
+  .respuestas > .grupo-resp:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+  .col-lideres { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+  .col-lideres > div { border-top: 2px solid var(--linea-2); padding-top: 8px; }
+
+  .plan-fila { display: grid; grid-template-columns: 1.3fr 1.6fr 1.2fr .9fr .9fr 1.3fr .9fr auto; gap: 8px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--linea); }
+  .plan-fila.enc { font-size: 13px; font-weight: 600; color: var(--tinta-2); border-bottom: 2px solid var(--linea-2); }
+  .plan-fila select, .plan-fila input, .plan-fila textarea { padding: 6px 7px; font-size: 13px; }
+  .plan-fila textarea { min-height: 36px; }
+  .sugerencias { display: flex; gap: 6px 16px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; }
+  .sugerencias button { font-size: 13px; border: 0; background: none; color: var(--acento); padding: 0; cursor: pointer; text-align: left; }
+  .sugerencias button:hover { text-decoration: underline; }
+
+  .heat { border-collapse: separate; border-spacing: 1px; font-size: 12px; }
+  .heat th { font-size: 11px; font-weight: 600; color: var(--tinta-3); padding: 2px; }
+  .heat th.rot { height: 40px; vertical-align: bottom; }
+  .heat td.n { white-space: nowrap; padding-right: 8px; font-size: 13px; position: sticky; left: 0; background: var(--superficie); }
+  .heat td.c { width: 24px; min-width: 24px; height: 22px; text-align: center; font-size: 11px; }
+  .heat td.c.vacia { background: var(--superficie-2); }
+  .mini-barras div { display: grid; grid-template-columns: minmax(120px, 1fr) 2fr 36px; gap: 8px; align-items: center; font-size: 13px; margin-top: 5px; }
+  .mini-barras i { display: block; height: 9px; background: var(--acento); }
+
+  @media (max-width: 900px) {
+    .rejilla-2 { grid-template-columns: 1fr; }
+    .eval-layout { grid-template-columns: 1fr; }
+    .lista-p { display: none; }
+    .sel-movil { display: block; margin-bottom: 12px; }
+    .plan-fila { grid-template-columns: 1fr 1fr; }
+    .plan-fila.enc { display: none; }
+  }
+  @media (max-width: 640px) { .tabla-wrap { margin: 0 -16px; padding: 0 16px; } }
+</style>
+</head>
+<body>
+<div class="demo-banda" id="banda-demo" hidden><div class="wrap ancho">Versión de prueba con datos ficticios. Entra con cualquier líder y el PIN 1234.</div></div>
+
+<header class="top" id="cab">
+  <div class="wrap ancho">
+    <div class="fila-top">
+      <div>
+        <div class="org" id="org">&nbsp;</div>
+        <h1 id="titulo">Evaluación de competencias</h1>
+      </div>
+      <div class="sesion-info" id="sesion-info" hidden></div>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist" hidden>
+      <button role="tab" data-tab="tablero" aria-selected="true">Tablero</button>
+      <button role="tab" data-tab="evaluar" aria-selected="false">Evaluar</button>
+      <button role="tab" data-tab="persona" aria-selected="false">Por persona</button>
+      <button role="tab" data-tab="equipo" aria-selected="false">Equipo</button>
+      <button role="tab" data-tab="calibracion" aria-selected="false">Calibración</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap ancho">
+  <!-- Acceso -->
+  <section class="card" id="v-login" style="max-width:440px;margin:0 auto" hidden>
+    <h2 style="font-size:17px">Acceso</h2>
+    <form id="f-login" style="margin-top:12px">
+      <label class="campo" for="l-lider">Nombre</label>
+      <select id="l-lider" required><option value="">Selecciona</option></select>
+      <label class="campo" for="l-pin" style="margin-top:14px">PIN</label>
+      <input type="password" id="l-pin" autocomplete="off" autocapitalize="characters" required>
+      <p class="aviso error" id="l-error" style="margin-top:14px" hidden></p>
+      <p style="margin-top:16px"><button class="btn" type="submit" id="l-btn">Entrar</button></p>
+    </form>
+    
+  </section>
+
+  <section class="card" id="v-cargando"><p class="cargando">Cargando…</p></section>
+
+  <section id="t-tablero" hidden></section>
+  <section id="t-evaluar" hidden></section>
+  <section id="t-persona" hidden></section>
+  <section id="t-equipo" hidden></section>
+  <section id="t-calibracion" hidden></section>
+</main>
+
+<script src="config.js"></script>
+<script src="demo.js"></script>
+<script src="comun.js"></script>
+<script>
+(function () {
+  'use strict';
+  var D = window.Diag, esc = D.esc;
+  var $ = function (id) { return document.getElementById(id); };
+  var CORTE = 3; // corte de los cuadrantes en la escala 1 a 5
+  var S = { lider: '', pin: '', cat: null, auto: [], ev: [], plan: [], an: null, tab: 'tablero', evalSel: '', personaSel: '' };
+
+  if (D.DEMO) $('banda-demo').hidden = false;
+
+  /* ================= Acceso ================= */
+
+  function vistaLogin(lideres) {
+    $('v-cargando').hidden = true;
+    $('v-login').hidden = false;
+    var sel = $('l-lider');
+    sel.innerHTML = '<option value="">Selecciona</option>' + lideres.map(function (l) { return '<option>' + esc(l) + '</option>'; }).join('');
+  }
+
+  var previa = D.sesion.get('diag_lider');
+  if (previa && previa.lider) {
+    S.lider = previa.lider; S.pin = previa.pin;
+    cargar().catch(function () { D.sesion.del('diag_lider'); iniciarLogin(); });
+  } else {
+    iniciarLogin();
+  }
+
+  function iniciarLogin() {
+    D.api('catalogo').then(function (r) {
+      $('titulo').textContent = r.catalogo.titulo;
+      $('org').textContent = r.catalogo.organizacion || '';
+      vistaLogin(r.catalogo.personas.slice().sort(function (a, b) { return a.localeCompare(b, 'es'); }));
+    }).catch(function (e) {
+      $('v-cargando').innerHTML = '<p class="aviso error">' + esc(e.message) + '</p>';
+    });
+  }
+
+  $('f-login').addEventListener('submit', function (e) {
+    e.preventDefault();
+    S.lider = $('l-lider').value; S.pin = $('l-pin').value.trim();
+    $('l-error').hidden = true;
+    $('l-btn').disabled = true;
+    cargar().then(function () {
+      D.sesion.set('diag_lider', { lider: S.lider, pin: S.pin });
+    }).catch(function (err) {
+      $('l-error').textContent = err.message; $('l-error').hidden = false;
+      $('v-login').hidden = false; $('v-cargando').hidden = true;
+    }).then(function () { $('l-btn').disabled = false; });
+  });
+
+  function cargar() {
+    $('v-login').hidden = true; $('v-cargando').hidden = false;
+    return D.api('datosAdmin', { lider: S.lider, pin: S.pin }).then(function (r) {
+      S.cat = r.catalogo; S.auto = r.auto; S.ev = r.eval; S.plan = r.plan || [];
+      S.an = analizar();
+      $('v-cargando').hidden = true;
+      $('titulo').textContent = S.cat.titulo;
+      $('org').textContent = (S.cat.organizacion ? S.cat.organizacion + ' · ' : '') + 'Periodo ' + S.cat.periodo;
+      $('sesion-info').innerHTML = esc(S.lider) + '<button id="salir">Cerrar sesión</button>';
+      $('sesion-info').hidden = false;
+      $('salir').onclick = function () { D.sesion.del('diag_lider'); location.reload(); };
+      $('tabs').hidden = false; $('cab').classList.add('con-tabs');
+      irA(S.tab);
+    });
+  }
+
+  function recargar(tab) {
+    return D.api('datosAdmin', { lider: S.lider, pin: S.pin }).then(function (r) {
+      S.cat = r.catalogo; S.auto = r.auto; S.ev = r.eval; S.plan = r.plan || [];
+      S.an = analizar();
+      irA(tab || S.tab);
+    });
+  }
+
+  $('tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tab]'); if (b) irA(b.dataset.tab);
+  });
+
+  function irA(tab) {
+    S.tab = tab;
+    document.querySelectorAll('#tabs button').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false'); });
+    ['tablero', 'evaluar', 'persona', 'equipo', 'calibracion'].forEach(function (t) { $('t-' + t).hidden = t !== tab; });
+    ({ tablero: vTablero, evaluar: vEvaluar, persona: vPersona, equipo: vEquipo, calibracion: vCalibracion })[tab]();
+  }
+
+  /* ================= Análisis ================= */
+
+  function media(a) { return a.length ? a.reduce(function (s, x) { return s + x; }, 0) / a.length : null; }
+  function norm(c, v) { return c.invertida ? 6 - v : v; }
+  function f1(x) { return x == null ? '·' : x.toFixed(1); }
+  function signo(x) { if (x == null) return '·'; if (Math.abs(x) < 0.05) return '0.0'; return (x > 0 ? '+' : '') + x.toFixed(1); }
+
+  function analizar() {
+    var cat = S.cat, comps = cat.competencias;
+    var autoR = {}, autoA = {}, autoFecha = {}, evR = {}, evC = {};
+    S.auto.forEach(function (r) {
+      if (r.tipo === 'Reactivo') (autoR[r.nombre] = autoR[r.nombre] || {})[r.id] = { v: r.valor, c: r.comentario };
+      else (autoA[r.nombre] = autoA[r.nombre] || {})[r.id] = r.valor;
+      autoFecha[r.nombre] = r.fecha;
+    });
+    S.ev.forEach(function (r) {
+      var p = (evR[r.evaluado] = evR[r.evaluado] || {});
+      var q = (evC[r.evaluado] = evC[r.evaluado] || {});
+      if (r.tipo === 'Reactivo') (p[r.lider] = p[r.lider] || {})[r.id] = { v: r.valor, c: r.comentario };
+      else (q[r.lider] = q[r.lider] || {})[r.id] = r.valor;
+    });
+    var critPrio = (cat.criterios || []).filter(function (c) { return c.tipo === 'prioridad'; })[0];
+
+    var personas = cat.personas.map(function (p) {
+      var lids = Object.keys(evR[p] || {});
+      var filas = comps.map(function (c) {
+        var a = (autoR[p] || {})[c.id];
+        var A = a && a.v !== '' ? norm(c, Number(a.v)) : null;
+        var porLider = {};
+        lids.forEach(function (l) {
+          var r = evR[p][l][c.id];
+          if (r && r.v !== 'NO' && r.v !== '' && r.v != null) porLider[l] = norm(c, Number(r.v));
+          else if (r && r.v === 'NO') porLider[l] = 'NO';
+        });
+        var nums = Object.keys(porLider).map(function (l) { return porLider[l]; }).filter(function (x) { return x !== 'NO'; });
+        var L = media(nums);
+        return {
+          c: c, A: A, L: L, porLider: porLider, comAuto: a && a.c,
+          disp: nums.length > 1 ? Math.max.apply(null, nums) - Math.min.apply(null, nums) : null,
+          brecha: A != null && L != null ? A - L : null,
+          deficit: L != null ? Math.max(0, c.esperado - L) : null
+        };
+      });
+      var cuenta = filas.filter(function (f) { return f.c.importancia > 0; });
+      var Aavg = media(cuenta.filter(function (f) { return f.A != null; }).map(function (f) { return f.A; }));
+      var Lavg = media(cuenta.filter(function (f) { return f.L != null; }).map(function (f) { return f.L; }));
+      var num = 0, den = 0;
+      cuenta.forEach(function (f) {
+        if (f.L == null) return;
+        var w = f.c.importancia, E = f.c.esperado;
+        var def = Math.max(0, E - f.L) / (E - 1);
+        var sob = f.A != null ? Math.max(0, f.A - f.L) / 4 : 0;
+        num += w * (0.7 * def + 0.3 * sob); den += w;
+      });
+      var indice = den ? 100 * num / den : null;
+      var nivel = indice == null ? null : indice >= cat.umbralAlta ? 'Alta' : indice >= cat.umbralMedia ? 'Media' : 'Baja';
+      var cuad = null;
+      if (Aavg != null && Lavg != null) {
+        cuad = Lavg < CORTE ? (Aavg >= CORTE ? 'sobre' : 'reconocida') : (Aavg < CORTE ? 'sub' : 'alineado');
+      }
+      var prioridades = {};
+      Object.keys(evC[p] || {}).forEach(function (l) {
+        var v = critPrio && evC[p][l][critPrio.id];
+        if (v) prioridades[l] = v;
+      });
+      var top = filas.filter(function (f) { return f.L != null && f.c.importancia > 0 && f.deficit > 0; })
+        .sort(function (a, b) { return b.c.importancia * b.deficit - a.c.importancia * a.deficit; }).slice(0, 5);
+      return {
+        nombre: p, esLider: cat.lideres.indexOf(p) >= 0, filas: filas, Aavg: Aavg, Lavg: Lavg,
+        brecha: Aavg != null && Lavg != null ? Aavg - Lavg : null, indice: indice, nivel: nivel, cuad: cuad,
+        evaluadores: lids, tieneAuto: !!autoR[p], fechaAuto: autoFecha[p], abiertas: autoA[p] || {}, resultados: evC[p] || {},
+        prioridades: prioridades, top: top,
+        sobreestimados: filas.filter(function (f) { return f.brecha != null && f.brecha >= 1.5; }).length
+      };
+    });
+    return { personas: personas, porNombre: personas.reduce(function (o, x) { o[x.nombre] = x; return o; }, {}) };
+  }
+
+  var CUAD = {
+    sobre: { t: 'Sobreestimación', d: 'Los líderes la evalúan por debajo de 3 y la persona se califica en 3 o más. Requiere retroalimentación clara, porque la persona no identifica la brecha.' },
+    reconocida: { t: 'Brecha reconocida', d: 'Ambas calificaciones por debajo de 3. La persona sabe que necesita desarrollo.' },
+    sub: { t: 'Subestimación', d: 'Los líderes la evalúan en 3 o más y la persona se califica por debajo. Conviene trabajar la confianza.' },
+    alineado: { t: 'Alineado alto', d: 'Ambas calificaciones en 3 o más. Pueden apoyar como mentores.' }
+  };
+  function chipCuad(k) { return k ? '<span class="chip ' + k + '">' + CUAD[k].t + '</span>' : '<span class="chip gris">Sin datos</span>'; }
+  function chipNivel(n) { return n ? '<span class="chip ' + n.toLowerCase() + '">' + n + '</span>' : '<span class="chip gris">Sin evaluar</span>'; }
+  function colorNivel(n) { return n === 'Alta' ? 'var(--alto)' : n === 'Media' ? 'var(--medio)' : 'var(--bajo)'; }
+  function barraIndice(p) {
+    if (p.indice == null) return '<span class="tenue">Sin evaluación</span>';
+    return '<div class="barra-ind"><i style="width:' + Math.max(4, Math.min(100, p.indice * 1.6)) + 'px;background:' + colorNivel(p.nivel) + '"></i><span>' + Math.round(p.indice) + '</span></div>';
+  }
+  function chipsPrioridad(p) {
+    var cuenta = {};
+    Object.keys(p.prioridades).forEach(function (l) { cuenta[p.prioridades[l]] = (cuenta[p.prioridades[l]] || 0) + 1; });
+    var out = ['Alta', 'Media', 'Baja'].filter(function (k) { return cuenta[k]; }).map(function (k) {
+      return '<span class="chip ' + k.toLowerCase() + '" title="' + esc(Object.keys(p.prioridades).filter(function (l) { return p.prioridades[l] === k; }).join(', ')) + '">' + k + ' ' + cuenta[k] + '</span>';
+    }).join(' ');
+    return out || '<span class="tenue">·</span>';
+  }
+  function ordenRanking(a, b) {
+    if (a.indice == null && b.indice == null) return a.nombre.localeCompare(b.nombre, 'es');
+    if (a.indice == null) return 1; if (b.indice == null) return -1;
+    return b.indice - a.indice;
+  }
+
+  /* ================= Tablero ================= */
+
+  function vTablero() {
+    var an = S.an, cat = S.cat;
+    var ps = an.personas;
+    var conAuto = ps.filter(function (p) { return p.tieneAuto; }).length;
+    var conEval = ps.filter(function (p) { return p.evaluadores.length; }).length;
+    var misPend = evaluables();
+    var mias = misPend.filter(function (p) { return an.porNombre[p].evaluadores.indexOf(S.lider) >= 0; }).length;
+    var altas = ps.filter(function (p) { return p.nivel === 'Alta'; }).length;
+    var rank = ps.slice().sort(ordenRanking);
+
+    var html = '<div class="resumen-linea"><span>Autodiagnósticos recibidos: <b>' + conAuto + '</b> de ' + ps.length + '</span>' +
+      '<span>Personas con evaluación de líderes: <b>' + conEval + '</b> de ' + ps.length + '</span>' +
+      '<span>Tus evaluaciones: <b>' + mias + '</b> de ' + misPend.length + '</span>' +
+      '<span class="alerta">Atención alta: <b>' + altas + '</b></span></div>';
+
+    html += '<div class="card" style="margin-top:12px"><div class="cab-card"><h3>Prioridad de atención</h3>' +
+      '<div><button class="btn sec peq" id="b-csv-res">Descargar resumen</button> <button class="btn sec peq" id="b-csv-det">Descargar detalle</button> <button class="btn peq" id="b-sheets">Guardar en Sheets</button></div></div>' +
+      '<div class="tabla-wrap"><table class="t"><thead><tr><th>Persona</th><th>Índice</th><th class="num">Auto</th><th class="num">Líderes</th><th class="num">Brecha</th><th>Cuadrante</th><th>Prioridad según líderes</th><th class="num">Evaluó</th></tr></thead><tbody>' +
+      rank.map(function (p) {
+        return '<tr class="clic" data-persona="' + esc(p.nombre) + '"><td><b>' + esc(p.nombre) + '</b>' + (p.tieneAuto ? '' : ' <span class="chip gris" title="No ha enviado autodiagnóstico">sin auto</span>') + '</td>' +
+          '<td>' + barraIndice(p) + '</td><td class="num">' + f1(p.Aavg) + '</td><td class="num">' + f1(p.Lavg) + '</td>' +
+          '<td class="num ' + (p.brecha > 0.25 ? 'pos' : p.brecha < -0.25 ? 'neg' : '') + '">' + signo(p.brecha) + '</td>' +
+          '<td>' + chipCuad(p.cuad) + '</td><td>' + chipsPrioridad(p) + '</td><td class="num">' + p.evaluadores.length + '/' + (cat.lideres.length - (p.esLider ? 1 : 0)) + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<p class="nota-met"><b>Índice de atención (0 a 100).</b> Combina qué tan por debajo del nivel esperado está la evaluación promedio de los líderes (70%) y cuánto se sobreestima la persona respecto a esa evaluación (30%), ponderado por la importancia de cada reactivo. Alta a partir de ' + cat.umbralAlta + ', media a partir de ' + cat.umbralMedia + '. <b>Brecha</b> = autopercepción menos evaluación de líderes: positiva indica sobreestimación. <b>Prioridad según líderes</b>: cuántos líderes marcaron cada nivel (pasa el cursor para ver quién).</p></div>';
+
+    html += '<div class="card"><div class="cab-card"><h3>Autopercepción y evaluación de líderes</h3></div><div class="rejilla-2"><div>' + scatter(ps) + '</div><div>' +
+      Object.keys(CUAD).map(function (k) {
+        var quienes = ps.filter(function (p) { return p.cuad === k; }).map(function (p) { return p.nombre; });
+        return '<div style="margin-bottom:14px"><span class="chip ' + k + '">' + CUAD[k].t + ' (' + quienes.length + ')</span>' +
+          '<p class="tenue" style="margin-top:6px">' + esc(CUAD[k].d) + '</p>' +
+          (quienes.length ? '<p style="margin-top:4px;font-size:14px">' + esc(quienes.join(', ')) + '</p>' : '') + '</div>';
+      }).join('') + '<p class="nota-met">Por arriba de la diagonal la persona se califica mejor de lo que la ven los líderes. Las líneas punteadas marcan el corte de ' + CORTE + ' en la escala de 1 a 5. Solo se grafican personas con ambas lecturas.</p></div></div></div>';
+
+    $('t-tablero').innerHTML = html;
+    $('t-tablero').querySelectorAll('[data-persona]').forEach(function (tr) {
+      tr.onclick = function () { S.personaSel = tr.dataset.persona; irA('persona'); };
+    });
+    $('b-csv-res').onclick = function () { descargarCSV('resumen', filasResumen()); };
+    $('b-csv-det').onclick = function () { descargarCSV('detalle', filasDetalle()); };
+    $('b-sheets').onclick = function () {
+      var t = filasResumen(), b = this; b.disabled = true;
+      D.api('guardarMatriz', { lider: S.lider, pin: S.pin, encabezados: t[0], filas: t.slice(1) })
+        .then(function () { D.toast('Matriz guardada en la hoja "Matriz".'); })
+        .catch(function (e) { D.toast(e.message, true); })
+        .then(function () { b.disabled = false; });
+    };
+  }
+
+  function scatter(ps) {
+    var W = 380, P = 34, R = W - P * 2;
+    var x = function (v) { return P + (v - 1) / 4 * R; };
+    var y = function (v) { return W - P - (v - 1) / 4 * R; };
+    var col = { sobre: 'var(--alto)', reconocida: 'var(--medio)', sub: 'var(--azul)', alineado: 'var(--bajo)' };
+    var s = '<svg class="scatter" viewBox="0 0 ' + W + ' ' + W + '" width="100%" role="img" aria-label="Diagrama de dispersión de autopercepción contra evaluación de líderes">';
+    s += '<rect x="' + P + '" y="' + P + '" width="' + R + '" height="' + R + '" fill="var(--superficie)" stroke="var(--linea-2)"/>';
+    [1, 2, 3, 4, 5].forEach(function (v) {
+      s += '<text x="' + x(v) + '" y="' + (W - P + 16) + '" font-size="11" text-anchor="middle" fill="var(--tinta-3)">' + v + '</text>';
+      s += '<text x="' + (P - 10) + '" y="' + (y(v) + 4) + '" font-size="11" text-anchor="end" fill="var(--tinta-3)">' + v + '</text>';
+    });
+    s += '<line x1="' + x(1) + '" y1="' + y(1) + '" x2="' + x(5) + '" y2="' + y(5) + '" stroke="var(--linea-2)" stroke-width="1.5"/>';
+    s += '<line x1="' + x(CORTE) + '" y1="' + P + '" x2="' + x(CORTE) + '" y2="' + (W - P) + '" stroke="var(--tinta-3)" stroke-dasharray="3 4"/>';
+    s += '<line x1="' + P + '" y1="' + y(CORTE) + '" x2="' + (W - P) + '" y2="' + y(CORTE) + '" stroke="var(--tinta-3)" stroke-dasharray="3 4"/>';
+    var et = function (tx, xx, yy, anc) { return '<text x="' + xx + '" y="' + yy + '" font-size="10.5" text-anchor="' + anc + '" fill="var(--tinta-3)">' + tx + '</text>'; };
+    s += et('Sobreestimación', P + 6, P + 14, 'start') + et('Alineado alto', W - P - 6, P + 14, 'end') +
+      et('Brecha reconocida', P + 6, W - P - 8, 'start') + et('Subestimación', W - P - 6, W - P - 8, 'end');
+    s += '<text x="' + (W / 2) + '" y="' + (W - 4) + '" font-size="11.5" text-anchor="middle" fill="var(--tinta-2)">Evaluación de líderes</text>';
+    s += '<text transform="translate(11 ' + (W / 2) + ') rotate(-90)" font-size="11.5" text-anchor="middle" fill="var(--tinta-2)">Autopercepción</text>';
+    var puestas = [];
+    var choca = function (b) { return puestas.some(function (o) { return b.x < o.x + o.w && b.x + b.w > o.x && b.y < o.y + o.h && b.y + b.h > o.y; }); };
+    ps.filter(function (p) { return p.cuad; }).sort(function (a, b) { return b.Aavg - a.Aavg; }).forEach(function (p) {
+      var cx = x(Math.min(5, Math.max(1, p.Lavg))), cy = y(Math.min(5, Math.max(1, p.Aavg)));
+      puestas.push({ x: cx - 6, y: cy - 6, w: 12, h: 12 });
+    });
+    ps.filter(function (p) { return p.cuad; }).sort(function (a, b) { return b.Aavg - a.Aavg; }).forEach(function (p) {
+      var cx = x(Math.min(5, Math.max(1, p.Lavg))), cy = y(Math.min(5, Math.max(1, p.Aavg)));
+      var txt = p.nombre.split(' ')[0], w = txt.length * 5.9 + 2, h = 11;
+      var cands = [[9, 4], [-9 - w, 4], [9, -8], [9, 16], [-9 - w, -8], [-9 - w, 16], [9, -20], [9, 28], [-w / 2, -12], [-w / 2, 22]];
+      var elegido = cands[0];
+      for (var i = 0; i < cands.length; i++) {
+        var bx = { x: cx + cands[i][0], y: cy + cands[i][1] - 9, w: w, h: h };
+        if (bx.x < P || bx.x + bx.w > W - 2) continue;
+        if (!choca(bx)) { elegido = cands[i]; break; }
+      }
+      puestas.push({ x: cx + elegido[0], y: cy + elegido[1] - 9, w: w, h: h });
+      s += '<g data-persona="' + esc(p.nombre) + '" style="cursor:pointer"><title>' + esc(p.nombre + ' · auto ' + f1(p.Aavg) + ' · líderes ' + f1(p.Lavg)) + '</title>' +
+        '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="' + col[p.cuad] + '"/>' +
+        '<text x="' + (cx + elegido[0]) + '" y="' + (cy + elegido[1]) + '" font-size="10.5" fill="var(--tinta)">' + esc(txt) + '</text></g>';
+    });
+    return s + '</svg>';
+  }
+
+  /* ================= Evaluar ================= */
+
+  function evaluables() {
+    var cat = S.cat;
+    return cat.personas.filter(function (p) {
+      if (p === S.lider) return false;
+      if (cat.lideres.indexOf(p) >= 0 && !cat.lideresSeEvaluan) return false;
+      return true;
+    }).sort(function (a, b) { return a.localeCompare(b, 'es'); });
+  }
+
+  function misValores(persona) {
+    var r = { c: {}, k: {} };
+    S.ev.forEach(function (x) {
+      if (x.lider !== S.lider || x.evaluado !== persona) return;
+      if (x.tipo === 'Reactivo') r.c[x.id] = { v: x.valor, c: x.comentario };
+      else r.k[x.id] = x.valor;
+    });
+    return r;
+  }
+
+  function vEvaluar() {
+    var lista = evaluables();
+    if (!S.evalSel || lista.indexOf(S.evalSel) < 0) {
+      S.evalSel = lista.filter(function (p) { return S.an.porNombre[p].evaluadores.indexOf(S.lider) < 0; })[0] || lista[0];
+    }
+    var hechos = lista.filter(function (p) { return S.an.porNombre[p].evaluadores.indexOf(S.lider) >= 0; }).length;
+    var html = '<div class="eval-layout"><nav class="card lista-p" aria-label="Personas"><p class="etq">' + hechos + ' de ' + lista.length + ' evaluadas</p>' +
+      lista.map(function (p) {
+        var ok = S.an.porNombre[p].evaluadores.indexOf(S.lider) >= 0;
+        return '<button data-p="' + esc(p) + '" aria-current="' + (p === S.evalSel) + '"><span>' + esc(p) + '</span>' + (ok ? '<span class="ok">Evaluada</span>' : '<span class="pend">Pendiente</span>') + '</button>';
+      }).join('') + '</nav><div><select class="sel-movil" id="ev-sel-movil">' +
+      lista.map(function (p) {
+        var ok = S.an.porNombre[p].evaluadores.indexOf(S.lider) >= 0;
+        return '<option value="' + esc(p) + '"' + (p === S.evalSel ? ' selected' : '') + '>' + esc(p) + (ok ? ' (evaluada)' : '') + '</option>';
+      }).join('') + '</select><form id="f-eval" novalidate></form></div></div>';
+    $('t-evaluar').innerHTML = html;
+    $('t-evaluar').querySelectorAll('.lista-p [data-p]').forEach(function (b) { b.onclick = function () { cambiarEvaluado(b.dataset.p); }; });
+    $('ev-sel-movil').onchange = function () { cambiarEvaluado(this.value); };
+    formEval();
+  }
+
+  function cambiarEvaluado(p) { S.evalSel = p; vEvaluar(); window.scrollTo({ top: 0 }); }
+
+  function claveEval() { return 'diag_eval_' + S.cat.periodo + '_' + S.lider + '_' + S.evalSel; }
+
+  function formEval() {
+    var cat = S.cat, p = S.evalSel;
+    var guardado = misValores(p);
+    var borrador = D.store.get(claveEval());
+    var val = borrador || guardado;
+    var yaEvaluada = S.an.porNombre[p].evaluadores.indexOf(S.lider) >= 0;
+    var comps = cat.competencias.filter(function (c) { return c.evaluaLider; });
+    var bloques = []; comps.forEach(function (c) { if (bloques.indexOf(c.bloque) < 0) bloques.push(c.bloque); });
+
+    var html = '<div class="card"><h2 style="font-size:20px">' + esc(p) + '</h2>' +
+      '<p class="muted" style="margin-top:6px">' + (yaEvaluada ? 'Ya registraste esta evaluación. Puedes ajustarla y guardar de nuevo. ' : '') +
+      'Califica solo lo que hayas observado. Si no has visto a la persona en esa situación, marca N/O. ' +
+      'Su autodiagnóstico no aparece en esta pantalla para que no influya en tu calificación.</p>' +
+      (borrador ? '<p class="aviso info" style="margin-top:10px">Hay cambios sin guardar de una sesión anterior. <button type="button" class="btn fantasma" id="b-descartar">Descartarlos</button></p>' : '') +
+      '</div>';
+
+    bloques.forEach(function (b, i) {
+      var cs = comps.filter(function (c) { return c.bloque === b; });
+      html += '<section class="card bloque"><div class="bloque-cab"><h2>' + esc(b) + '</h2></div>' +
+        cs.map(function (c) {
+          var v = (val.c[c.id] || {}).v, com = (val.c[c.id] || {}).c || '';
+          return '<div class="item" data-reac="' + esc(c.id) + '"><div class="preg">' + esc(c.textoLider) + (c.invertida ? ' <span class="tenue" style="font-weight:400">(aquí un número alto es negativo)</span>' : '') + '</div>' +
+            D.escalaHTML('e_' + c.id, cat.escalas[c.escala] || [], v, { noObs: true }) +
+            '<div class="com-tog"><button type="button" class="btn fantasma" data-com>' + (com ? 'Editar ejemplo' : 'Agregar ejemplo') + '</button></div>' +
+            '<div class="com"' + (com ? '' : ' hidden') + '><textarea name="ec_' + esc(c.id) + '" rows="2">' + esc(com) + '</textarea></div></div>';
+        }).join('') + '</section>';
+    });
+
+    html += '<section class="card bloque"><div class="bloque-cab"><h2>Resultados</h2></div>' +
+      (cat.criterios || []).map(function (k) { return D.preguntaHTML(k, 'k_', val.k[k.id], cat.escalas); }).join('') + '</section>';
+
+    html += '<div class="guardar-fijo"><button type="button" class="btn sec peq" id="b-no-obs">Marcar pendientes como N/O</button>' +
+      '<span class="tenue" id="ev-estado"></span><button type="submit" class="btn" id="b-guardar-eval">Guardar evaluación</button></div>';
+
+    var f = $('f-eval');
+    f.innerHTML = html;
+    if ($('b-descartar')) $('b-descartar').onclick = function () { D.store.del(claveEval()); formEval(); };
+    f.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-com]'); if (!b) return;
+      var caja = b.closest('.item').querySelector('.com'); caja.hidden = !caja.hidden;
+    });
+    var t;
+    var alCambiar = function (e) {
+      var it = e.target.closest('.item'); if (it) it.classList.remove('falta');
+      clearTimeout(t); t = setTimeout(function () { D.store.set(claveEval(), leerEval()); estadoEval(); }, 300);
+    };
+    f.addEventListener('input', alCambiar); f.addEventListener('change', alCambiar);
+    $('b-no-obs').onclick = function () {
+      comps.forEach(function (c) {
+        if (!D.valorRadio(f, 'e_' + c.id)) { var r = f.querySelector('input[name="e_' + D.cssEsc(c.id) + '"][value="NO"]'); if (r) r.checked = true; }
+      });
+      D.store.set(claveEval(), leerEval()); estadoEval();
+    };
+    f.onsubmit = guardarEval;
+    estadoEval();
+  }
+
+  function leerEval() {
+    var f = $('f-eval'), out = { c: {}, k: {} };
+    S.cat.competencias.filter(function (c) { return c.evaluaLider; }).forEach(function (c) {
+      var v = D.valorRadio(f, 'e_' + c.id);
+      var t = f.querySelector('[name="ec_' + D.cssEsc(c.id) + '"]');
+      out.c[c.id] = { v: v === 'NO' ? 'NO' : (v ? Number(v) : ''), c: t ? t.value.trim() : '' };
+    });
+    (S.cat.criterios || []).forEach(function (k) { out.k[k.id] = D.leerPregunta(f, k, 'k_'); });
+    return out;
+  }
+
+  function faltasEval(d) {
+    var f = [];
+    S.cat.competencias.filter(function (c) { return c.evaluaLider; }).forEach(function (c) {
+      if (d.c[c.id].v === '') f.push($('f-eval').querySelector('[data-reac="' + D.cssEsc(c.id) + '"]'));
+    });
+    (S.cat.criterios || []).forEach(function (k) {
+      if (k.requerida && D.vacio(d.k[k.id])) f.push($('f-eval').querySelector('[data-preg="' + D.cssEsc(k.id) + '"]'));
+    });
+    return f;
+  }
+
+  function estadoEval() {
+    var d = leerEval(), f = faltasEval(d);
+    var nNo = Object.keys(d.c).filter(function (id) { return d.c[id].v === 'NO'; }).length;
+    $('ev-estado').textContent = (f.length ? f.length + ' pendientes' : 'Completa') + (nNo ? ' · ' + nNo + ' N/O' : '');
+  }
+
+  function guardarEval(e) {
+    e.preventDefault();
+    var d = leerEval(), falta = faltasEval(d);
+    document.querySelectorAll('#f-eval .item.falta').forEach(function (x) { x.classList.remove('falta'); });
+    if (falta.length) {
+      falta.forEach(function (x) { x.classList.add('falta'); });
+      falta[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      D.toast('Faltan ' + falta.length + ' respuestas. Lo que no hayas observado, márcalo como N/O.', true);
+      return;
+    }
+    var payload = { lider: S.lider, pin: S.pin, evaluado: S.evalSel, competencias: d.c, criterios: {} };
+    Object.keys(d.k).forEach(function (id) { payload.criterios[id] = { v: d.k[id] }; });
+    var b = $('b-guardar-eval'); b.disabled = true; b.textContent = 'Guardando…';
+    var quien = S.evalSel;
+    D.api('enviarEval', payload).then(function () {
+      D.store.del(claveEval());
+      D.toast('Evaluación de ' + quien + ' guardada.');
+      var lista = evaluables();
+      var siguiente = lista.filter(function (p) { return p !== quien && S.an.porNombre[p].evaluadores.indexOf(S.lider) < 0; })[0];
+      return recargar('evaluar').then(function () { if (siguiente) cambiarEvaluado(siguiente); });
+    }).catch(function (err) {
+      D.toast(err.message, true); b.disabled = false; b.textContent = 'Guardar evaluación';
+    });
+  }
+
+  /* ================= Por persona ================= */
+
+  function vPersona() {
+    var cat = S.cat;
+    var ps = S.an.personas.slice().sort(ordenRanking);
+    if (!S.personaSel) S.personaSel = ps[0].nombre;
+    var p = S.an.porNombre[S.personaSel];
+    var lideresP = cat.lideres.filter(function (l) { return l !== p.nombre; });
+
+    var html = '<div class="card"><div class="cab-card" style="margin-bottom:0"><div><label class="campo" for="p-sel">Persona</label><select id="p-sel" style="min-width:240px">' +
+      ps.map(function (x) { return '<option value="' + esc(x.nombre) + '"' + (x.nombre === p.nombre ? ' selected' : '') + '>' + esc(x.nombre) + (x.nivel ? ' · ' + x.nivel : '') + '</option>'; }).join('') +
+      '</select></div><div>' + chipNivel(p.nivel) + ' ' + chipCuad(p.cuad) + '</div></div>' +
+      '<div class="resumen-p"><div><span class="etq">Índice</span><b>' + (p.indice == null ? '·' : Math.round(p.indice)) + '</b></div>' +
+      '<div><span class="etq">Autopercepción</span><b>' + f1(p.Aavg) + '</b></div><div><span class="etq">Líderes</span><b>' + f1(p.Lavg) + '</b></div>' +
+      '<div><span class="etq">Brecha</span><b class="' + (p.brecha > 0.25 ? 'pos' : p.brecha < -0.25 ? 'neg' : '') + '">' + signo(p.brecha) + '</b></div>' +
+      '<div><span class="etq">Sobreestimados</span><b>' + p.sobreestimados + '</b></div>' +
+      '<div><span class="etq">Evaluada por</span><b style="font-size:14px;font-weight:600">' + (p.evaluadores.length ? esc(p.evaluadores.join(', ')) : 'Nadie aún') + '</b></div></div>' +
+      (p.tieneAuto ? '' : '<p class="aviso info" style="margin-top:14px">Todavía no envía su autodiagnóstico; solo se muestra la lectura de los líderes.</p>') + '</div>';
+
+    // Tabla de reactivos
+    html += '<div class="card"><div class="cab-card"><h3>Reactivo por reactivo</h3><div class="leyenda-pista"><span><i style="background:var(--azul)"></i>Autopercepción</span>' +
+      '<span><i style="background:var(--acento);border-radius:0"></i>Promedio líderes</span><span><i style="background:var(--medio);width:3px;border-radius:0"></i>Nivel esperado</span></div></div>' +
+      '<div class="tabla-wrap"><table class="t"><thead><tr><th>Reactivo</th><th style="min-width:180px"><div class="marcas-escala"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div></th>' +
+      '<th class="num">Auto</th><th class="num">Líderes</th>' + lideresP.map(function (l) { return '<th class="num" title="' + esc(l) + '">' + esc(l.slice(0, 3)) + '</th>'; }).join('') +
+      '<th class="num">Esp.</th><th></th></tr></thead><tbody>';
+    var bloqueAct = '';
+    p.filas.forEach(function (f) {
+      if (f.c.bloque !== bloqueAct) { bloqueAct = f.c.bloque; html += '<tr class="grupo"><td colspan="' + (6 + lideresP.length) + '">' + esc(bloqueAct) + '</td></tr>'; }
+      var pos = function (v) { return ((v - 1) / 4 * 100) + '%'; };
+      var flag = '';
+      if (f.brecha != null && f.brecha >= 1.5) flag = '<span class="flag pos">Se sobreestima</span>';
+      else if (f.brecha != null && f.brecha <= -1.5) flag = '<span class="flag neg">Se subestima</span>';
+      else if (f.deficit != null && f.deficit >= 1.5 && f.c.importancia >= 2) flag = '<span class="flag" style="color:var(--medio)">Brecha</span>';
+      if (f.disp != null && f.disp >= 2) flag += (flag ? ' · ' : '') + '<span class="flag" style="color:var(--tinta-3)" title="Los líderes difieren 2 puntos o más">Revisar entre líderes</span>';
+      html += '<tr><td>' + esc(f.c.textoLider) + (f.c.invertida ? ' <span class="tenue" title="Escala invertida: aquí 5 es lo deseable">(invertido)</span>' : '') +
+        (f.c.importancia === 0 ? ' <span class="tenue">(informativo)</span>' : '') +
+        (f.comAuto ? '<div class="tenue" style="margin-top:2px">“' + esc(f.comAuto) + '”</div>' : '') + '</td>' +
+        '<td><div class="pista"><span class="esp" style="left:' + pos(f.c.esperado) + '"></span>' +
+        (f.L != null ? '<span class="m lid" style="left:' + pos(f.L) + '" title="Líderes ' + f1(f.L) + '"></span>' : '') +
+        (f.A != null ? '<span class="m auto" style="left:' + pos(f.A) + '" title="Auto ' + f.A + '"></span>' : '') + '</div></td>' +
+        '<td class="num">' + (f.A == null ? '·' : f.A) + '</td><td class="num">' + f1(f.L) + '</td>' +
+        lideresP.map(function (l) { var v = f.porLider[l]; return '<td class="num val-l">' + (v == null ? '·' : v === 'NO' ? 'N/O' : v) + '</td>'; }).join('') +
+        '<td class="num val-l">' + f.c.esperado + '</td><td>' + flag + '</td></tr>';
+    });
+    html += '</tbody></table></div><p class="nota-met">Los reactivos invertidos (correcciones, observaciones, retrabajo) están ajustados para que en toda la tabla 5 sea lo deseable.</p></div>';
+
+    // Respuestas abiertas
+    html += '<div class="rejilla-2"><div class="card"><div class="cab-card"><h3>Respuestas del autodiagnóstico</h3></div>';
+    if (!p.tieneAuto) html += '<p class="tenue">Sin autodiagnóstico.</p>';
+    else {
+      var bloques = D.ordenBloques(cat);
+      html += '<dl class="respuestas">' + bloques.map(function (b) {
+        var qs = cat.abiertas.filter(function (q) { return q.bloque === b && !D.vacio(p.abiertas[q.id]); });
+        if (!qs.length) return '';
+        return '<p class="grupo-resp">' + esc(b) + '</p>' + qs.map(function (q) {
+          return '<dt>' + esc(q.pregunta) + '</dt><dd>' + esc(p.abiertas[q.id]) + '</dd>';
+        }).join('');
+      }).join('') + '</dl>';
+    }
+    html += '</div><div class="card"><div class="cab-card"><h3>Resultados por líder</h3></div>';
+    if (!p.evaluadores.length) html += '<p class="tenue">Aún no hay evaluaciones.</p>';
+    else {
+      html += '<div class="col-lideres">' + p.evaluadores.map(function (l) {
+        var r = p.resultados[l] || {};
+        return '<div><p class="etq">' + esc(l) + '</p><dl class="respuestas">' + (cat.criterios || []).map(function (k) {
+          var v = r[k.id]; if (D.vacio(v)) return '';
+          return '<dt>' + esc(k.pregunta) + '</dt><dd>' + (k.tipo === 'prioridad' ? chipNivel(v) : k.tipo === 'escala5' ? '<b class="val-l" style="font-size:14px;color:var(--tinta)">' + esc(v) + ' / 5</b>' : esc(v)) + '</dd>';
+        }).join('') + '</dl></div>';
+      }).join('') + '</div>';
+    }
+    html += '</div></div>';
+
+    // Plan de acción
+    html += '<div class="card" id="plan-card"><div class="cab-card"><h3>Plan de acción</h3><span class="tenue">Un plan por persona, compartido entre los líderes</span></div><div id="plan-filas"></div>' +
+      '<div class="sugerencias" id="plan-sug"></div>' +
+      '<div class="acciones-fin" style="margin-top:14px"><button type="button" class="btn sec peq" id="plan-add">Agregar acción</button><button type="button" class="btn" id="plan-save">Guardar plan</button></div></div>';
+
+    $('t-persona').innerHTML = html;
+    $('p-sel').onchange = function () { S.personaSel = this.value; vPersona(); };
+    planEditor(p);
+  }
+
+  function planEditor(p) {
+    var cat = S.cat;
+    var acciones = S.plan.filter(function (x) { return x.persona === p.nombre; }).sort(function (a, b) { return a.num - b.num; }).map(function (x) { return Object.assign({}, x); });
+    var opcion = function (valor, texto, actual) {
+      return '<option value="' + esc(valor) + '"' + (String(actual || '') === String(valor) ? ' selected' : '') + '>' + esc(texto) + '</option>';
+    };
+    var opsComp = function (a) {
+      var actual = a.idComp || (a.competencia ? 'otra' : '');
+      return opcion('', 'Selecciona', actual) + cat.competencias.map(function (c) { return opcion(c.id, c.id + ' · ' + c.texto, actual); }).join('') +
+        opcion('otra', a.competencia && !a.idComp ? 'Otra: ' + a.competencia : 'Otra (escribir en acción)', actual);
+    };
+    var opsResp = function (a) {
+      return opcion('', 'Selecciona', a.responsable) + cat.lideres.concat([p.nombre]).map(function (l) { return opcion(l, l, a.responsable); }).join('');
+    };
+    var estados = ['Pendiente', 'En curso', 'Cumplida', 'Cancelada'];
+
+    function pintar() {
+      var h = '<div class="plan-fila enc"><span>Competencia</span><span>Acción específica</span><span>Capacitación</span><span>Responsable</span><span>Fecha objetivo</span><span>Indicador de éxito</span><span>Estado</span><span></span></div>';
+      if (!acciones.length) h += '<p class="tenue" style="padding:10px 0">Todavía no hay acciones registradas.</p>';
+      acciones.forEach(function (a, i) {
+        h += '<div class="plan-fila" data-i="' + i + '">' +
+          '<select data-k="idComp" aria-label="Competencia">' + opsComp(a) + '</select>' +
+          '<textarea data-k="accion" aria-label="Acción específica" rows="2">' + esc(a.accion || '') + '</textarea>' +
+          '<textarea data-k="capacitacion" aria-label="Capacitación requerida" rows="2">' + esc(a.capacitacion || '') + '</textarea>' +
+          '<select data-k="responsable" aria-label="Responsable">' + opsResp(a) + '</select>' +
+          '<input type="date" data-k="fecha" aria-label="Fecha objetivo" value="' + esc(a.fecha || '') + '">' +
+          '<textarea data-k="indicador" aria-label="Indicador de éxito" rows="2">' + esc(a.indicador || '') + '</textarea>' +
+          '<select data-k="estado" aria-label="Estado">' + estados.map(function (s) { return '<option' + ((a.estado || 'Pendiente') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' +
+          '<button type="button" class="btn fantasma" data-quitar title="Quitar acción" aria-label="Quitar acción">Quitar</button></div>';
+      });
+      $('plan-filas').innerHTML = h;
+      var usados = acciones.map(function (a) { return a.idComp; });
+      var sug = p.top.filter(function (f) { return usados.indexOf(f.c.id) < 0; });
+      $('plan-sug').innerHTML = sug.length ? '<span class="tenue">Agregar desde sus brechas principales:</span>' + sug.map(function (f) {
+        return '<button type="button" data-sug="' + esc(f.c.id) + '">' + esc(f.c.textoLider) + ' (' + f1(f.L) + ' de ' + f.c.esperado + ')</button>';
+      }).join('') : '';
+    }
+    pintar();
+
+    $('plan-filas').addEventListener('input', function (e) {
+      var fila = e.target.closest('[data-i]'); if (!fila) return;
+      acciones[+fila.dataset.i][e.target.dataset.k] = e.target.value;
+    });
+    $('plan-filas').addEventListener('click', function (e) {
+      if (!e.target.closest('[data-quitar]')) return;
+      acciones.splice(+e.target.closest('[data-i]').dataset.i, 1); pintar();
+    });
+    $('plan-sug').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-sug]'); if (!b) return;
+      acciones.push({ idComp: b.dataset.sug, responsable: S.lider, estado: 'Pendiente' }); pintar();
+    });
+    $('plan-add').onclick = function () { acciones.push({ responsable: S.lider, estado: 'Pendiente' }); pintar(); };
+    $('plan-save').onclick = function () {
+      var b = this; b.disabled = true;
+      var limpias = acciones.map(function (a) {
+        var c = cat.competencias.filter(function (x) { return x.id === a.idComp; })[0];
+        return { idComp: c ? c.id : '', competencia: c ? c.texto : (a.competencia || ''), accion: a.accion || '', capacitacion: a.capacitacion || '', responsable: a.responsable || '', fecha: a.fecha || '', indicador: a.indicador || '', estado: a.estado || 'Pendiente' };
+      }).filter(function (a) { return a.idComp || a.accion; });
+      D.api('guardarPlan', { lider: S.lider, pin: S.pin, persona: p.nombre, acciones: limpias }).then(function () {
+        D.toast('Plan de ' + p.nombre + ' guardado.');
+        return recargar('persona');
+      }).catch(function (e) { D.toast(e.message, true); }).then(function () { b.disabled = false; });
+    };
+  }
+
+  /* ================= Equipo ================= */
+
+  function vEquipo() {
+    var cat = S.cat, ps = S.an.personas;
+    var temas = cat.competencias.filter(function (c) { return c.importancia > 0; }).map(function (c) {
+      var Ls = [], As = [], debajo = 0;
+      ps.forEach(function (p) {
+        var f = p.filas.filter(function (x) { return x.c.id === c.id; })[0];
+        if (f.L != null) { Ls.push(f.L); if (f.L < c.esperado - 0.25) debajo++; }
+        if (f.A != null) As.push(f.A);
+      });
+      var pct = Ls.length ? debajo / Ls.length : null;
+      return { c: c, L: media(Ls), A: media(As), n: Ls.length, debajo: debajo, pct: pct, peso: pct == null ? -1 : pct * c.importancia };
+    }).sort(function (a, b) { return b.peso - a.peso; });
+
+    var html = '<div class="card"><div class="cab-card"><h3>Temas prioritarios para el plan colectivo</h3><button class="btn fantasma" id="eq-todos">Ver todos</button></div>' +
+      '<div class="tabla-wrap"><table class="t"><thead><tr><th>Reactivo</th><th>Bloque</th><th class="num">Líderes</th><th class="num">Auto</th><th class="num">Esperado</th><th>Personas por debajo</th></tr></thead><tbody>' +
+      temas.map(function (t, i) {
+        return '<tr' + (i >= 12 ? ' class="extra" hidden' : '') + '><td>' + esc(t.c.texto) + '</td><td class="tenue">' + esc(t.c.bloque) + '</td><td class="num">' + f1(t.L) + '</td><td class="num">' + f1(t.A) + '</td><td class="num">' + t.c.esperado + '</td>' +
+          '<td>' + (t.pct == null ? '<span class="tenue">Sin datos</span>' : '<div class="barra-ind"><i style="width:' + Math.max(3, t.pct * 120) + 'px;background:' + (t.pct >= .5 ? 'var(--alto)' : t.pct >= .3 ? 'var(--medio)' : 'var(--bajo)') + '"></i><span style="width:auto">' + t.debajo + ' de ' + t.n + '</span></div>') + '</td></tr>';
+      }).join('') + '</tbody></table></div><p class="nota-met">Ordenado por proporción de personas cuya evaluación de líderes está por debajo del nivel esperado, ponderada por importancia. Los primeros renglones son candidatos naturales a capacitación grupal.</p></div>';
+
+    // Mapa de calor
+    var comps = cat.competencias;
+    var orden = ps.slice().sort(ordenRanking);
+    html += '<div class="card"><div class="cab-card"><h3>Mapa de brechas por persona</h3><span class="tenue">Evaluación de líderes comparada con el nivel esperado</span></div><div class="tabla-wrap"><table class="heat"><thead><tr><th></th>' +
+      comps.map(function (c) { return '<th class="rot" title="' + esc(c.texto + ' · ' + c.bloque) + '">' + esc(c.id.replace(/^[A-Z]0?/, '')) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      orden.map(function (p) {
+        return '<tr><td class="n">' + esc(p.nombre) + '</td>' + p.filas.map(function (f) {
+          if (f.L == null) return '<td class="c vacia" title="' + esc(p.nombre + ' · ' + f.c.texto + ': sin evaluación') + '"></td>';
+          var d = f.L - f.c.esperado; // negativo = por debajo
+          var bg = d >= 0 ? 'rgba(62,125,90,' + Math.min(.55, .15 + d * .2) + ')' : 'rgba(180,67,44,' + Math.min(.85, .18 + (-d) * .28) + ')';
+          var marca = f.brecha != null && f.brecha >= 1.5 ? '▲' : f.brecha != null && f.brecha <= -1.5 ? '▼' : '';
+          return '<td class="c" style="background:' + bg + ';color:' + (d < -1.4 ? '#fff' : 'var(--tinta)') + '" title="' + esc(p.nombre + ' · ' + f.c.texto + ': líderes ' + f1(f.L) + ', esperado ' + f.c.esperado + (f.A != null ? ', auto ' + f.A : '')) + '">' + marca + '</td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table></div><p class="nota-met">Rojo: por debajo del nivel esperado (más intenso, mayor brecha). Verde: en el nivel esperado o arriba. ▲ la persona se califica 1.5 puntos o más por arriba de los líderes; ▼ por debajo. Pasa el cursor sobre una celda para ver el detalle.</p></div>';
+
+    // Lo que el equipo reporta
+    var preguntasOp = cat.abiertas.filter(function (q) { return q.tipo === 'opcion' || q.tipo === 'multiple'; });
+    html += '<div class="card"><div class="cab-card"><h3>Respuestas de opción del equipo</h3><span class="tenue">' + ps.filter(function (p) { return p.tieneAuto; }).length + ' autodiagnósticos</span></div><div class="rejilla-2" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">' +
+      preguntasOp.map(function (q) {
+        var cuenta = {}; var n = 0;
+        ps.forEach(function (p) {
+          var v = p.abiertas[q.id]; if (D.vacio(v)) return; n++;
+          String(v).split(';').map(function (x) { return x.trim().replace(/^Otra:.*$/i, 'Otra'); }).filter(String).forEach(function (x) { cuenta[x] = (cuenta[x] || 0) + 1; });
+        });
+        var max = Math.max.apply(null, q.opciones.map(function (o) { return cuenta[o] || 0; }).concat([1]));
+        return '<div><p style="font-weight:600;font-size:14px">' + esc(q.pregunta) + '</p><div class="mini-barras">' + q.opciones.map(function (o) {
+          var c = cuenta[o] || 0;
+          return '<div><span>' + esc(o) + '</span><span><i style="width:' + (100 * c / max) + '%"></i></span><span class="num">' + c + '</span></div>';
+        }).join('') + '</div></div>';
+      }).join('') + '</div></div>';
+
+    $('t-equipo').innerHTML = html;
+    $('eq-todos').onclick = function () {
+      var ocultas = $('t-equipo').querySelectorAll('tr.extra');
+      var mostrar = ocultas.length && ocultas[0].hidden;
+      ocultas.forEach(function (tr) { tr.hidden = !mostrar; });
+      this.textContent = mostrar ? 'Ver menos' : 'Ver todos';
+    };
+  }
+
+  /* ================= Calibración ================= */
+
+  function vCalibracion() {
+    var cat = S.cat, ps = S.an.personas;
+    // Severidad de cada líder: diferencia promedio contra los demás líderes en los mismos casos.
+    var stats = cat.lideres.map(function (l) {
+      var difs = [], n = 0, nNo = 0, tot = 0;
+      ps.forEach(function (p) {
+        p.filas.forEach(function (f) {
+          var v = f.porLider[l]; if (v == null) return;
+          tot++; if (v === 'NO') { nNo++; return; }
+          n++;
+          var otros = Object.keys(f.porLider).filter(function (k) { return k !== l && f.porLider[k] !== 'NO'; }).map(function (k) { return f.porLider[k]; });
+          if (otros.length) difs.push(v - media(otros));
+        });
+      });
+      return { l: l, n: n, pctNo: tot ? nNo / tot : 0, dif: media(difs), personas: ps.filter(function (p) { return p.evaluadores.indexOf(l) >= 0; }).length };
+    });
+    var desacuerdos = [];
+    ps.forEach(function (p) {
+      p.filas.forEach(function (f) { if (f.disp != null && f.disp >= 2) desacuerdos.push({ p: p, f: f }); });
+    });
+    desacuerdos.sort(function (a, b) { return b.f.disp - a.f.disp || a.p.nombre.localeCompare(b.p.nombre, 'es'); });
+
+    var html = '<div class="card"><div class="cab-card"><h3>Cómo califica cada líder</h3></div><div class="tabla-wrap"><table class="t"><thead><tr><th>Líder</th><th class="num">Personas evaluadas</th><th class="num">Calificaciones</th><th class="num">% N/O</th><th class="num">Diferencia contra los demás</th><th>Lectura</th></tr></thead><tbody>' +
+      stats.map(function (s) {
+        var lect = s.dif == null ? '<span class="tenue">Sin casos comparables</span>' : Math.abs(s.dif) < 0.25 ? '<span class="chip baja">Similar a los demás</span>' : s.dif > 0 ? '<span class="chip media">Califica más alto</span>' : '<span class="chip sub">Califica más bajo</span>';
+        return '<tr><td><b>' + esc(s.l) + '</b></td><td class="num">' + s.personas + '</td><td class="num">' + s.n + '</td><td class="num">' + Math.round(s.pctNo * 100) + '%</td><td class="num">' + signo(s.dif) + '</td><td>' + lect + '</td></tr>';
+      }).join('') + '</tbody></table></div><p class="nota-met">La diferencia compara cada calificación del líder con el promedio de los otros líderes sobre la misma persona y el mismo reactivo. Si un líder califica de forma sistemática medio punto o más por arriba o por debajo, conviene acordar criterios antes de usar los resultados.</p></div>';
+
+    html += '<div class="card"><div class="cab-card"><h3>Desacuerdos entre líderes</h3><span class="tenue">' + desacuerdos.length + ' casos con diferencia de 2 puntos o más</span></div>' +
+      (desacuerdos.length ? '<div class="tabla-wrap"><table class="t"><thead><tr><th>Persona</th><th>Reactivo</th>' + cat.lideres.map(function (l) { return '<th class="num">' + esc(l) + '</th>'; }).join('') + '<th class="num">Rango</th></tr></thead><tbody>' +
+        desacuerdos.slice(0, 80).map(function (x) {
+          return '<tr class="clic" data-persona="' + esc(x.p.nombre) + '"><td><b>' + esc(x.p.nombre) + '</b></td><td>' + esc(x.f.c.textoLider) + '</td>' +
+            cat.lideres.map(function (l) { var v = x.f.porLider[l]; return '<td class="num val-l">' + (v == null ? '·' : v === 'NO' ? 'N/O' : v) + '</td>'; }).join('') +
+            '<td class="num"><b>' + x.f.disp + '</b></td></tr>';
+        }).join('') + '</tbody></table></div>' + (desacuerdos.length > 80 ? '<p class="tenue" style="margin-top:8px">Se muestran los primeros 80.</p>' : '')
+        : '<p class="tenue">Sin desacuerdos relevantes por ahora.</p>') +
+      '<p class="nota-met">Valores ajustados para que 5 sea siempre lo deseable. Conviene revisar estos casos en una reunión corta entre líderes. Con frecuencia la diferencia se explica porque cada líder ha visto a la persona en proyectos distintos.</p></div>';
+
+    $('t-calibracion').innerHTML = html;
+    $('t-calibracion').querySelectorAll('[data-persona]').forEach(function (tr) {
+      tr.onclick = function () { S.personaSel = tr.dataset.persona; irA('persona'); };
+    });
+  }
+
+  /* ================= Exportación ================= */
+
+  function filasResumen() {
+    var cat = S.cat;
+    var enc = ['Persona', 'Índice de atención', 'Prioridad calculada', 'Cuadrante', 'Autopercepción', 'Evaluación líderes', 'Brecha', 'Reactivos sobreestimados',
+      'Evaluada por', 'Lectura de líderes', 'Principales brechas', 'Autodiagnóstico'];
+    var filas = S.an.personas.slice().sort(ordenRanking).map(function (p) {
+      return [p.nombre, p.indice == null ? '' : Math.round(p.indice), p.nivel || '', p.cuad ? CUAD[p.cuad].t : '',
+        p.Aavg == null ? '' : +p.Aavg.toFixed(2), p.Lavg == null ? '' : +p.Lavg.toFixed(2), p.brecha == null ? '' : +p.brecha.toFixed(2), p.sobreestimados,
+        p.evaluadores.join(', '), Object.keys(p.prioridades).map(function (l) { return l + ': ' + p.prioridades[l]; }).join('; '),
+        p.top.slice(0, 3).map(function (f) { return f.c.texto; }).join('; '), p.tieneAuto ? 'Sí' : 'No'];
+    });
+    return [enc].concat(filas);
+  }
+
+  function filasDetalle() {
+    var cat = S.cat;
+    var enc = ['Persona', 'ID', 'Bloque', 'Reactivo', 'Escala', 'Invertida', 'Importancia', 'Nivel esperado', 'Autopercepción (norm.)', 'Promedio líderes (norm.)']
+      .concat(cat.lideres.map(function (l) { return l + ' (norm.)'; })).concat(['Brecha', 'Dispersión entre líderes']);
+    var filas = [];
+    S.an.personas.forEach(function (p) {
+      p.filas.forEach(function (f) {
+        filas.push([p.nombre, f.c.id, f.c.bloque, f.c.texto, f.c.escala, f.c.invertida ? 'Sí' : 'No', f.c.importancia, f.c.esperado,
+          f.A == null ? '' : f.A, f.L == null ? '' : +f.L.toFixed(2)]
+          .concat(cat.lideres.map(function (l) { var v = f.porLider[l]; return v == null ? '' : v === 'NO' ? 'N/O' : v; }))
+          .concat([f.brecha == null ? '' : +f.brecha.toFixed(2), f.disp == null ? '' : f.disp]));
+      });
+    });
+    return [enc].concat(filas);
+  }
+
+  function descargarCSV(nombre, filas) {
+    var csv = filas.map(function (r) {
+      return r.map(function (x) { var s = String(x == null ? '' : x); return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',');
+    }).join('\r\n');
+    var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'evaluacion_' + nombre + '_' + S.cat.periodo + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+})();
+</script>
+</body>
+</html>
